@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat App</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      #messages li {
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      #messages li span {
+        font-weight: bold;
+        margin-right: 5px;
+      }
+      #input-form input[type=text] {
+        width: 80%;
+        padding: 12px 20px;
+        margin: 8px 0;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+      }
+      #input-form input[type=submit] {
+        width: 20%;
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Chat App</h1>
+    <div id="user-info"></div>
+    <div>
+      <label for="to-user">To: </label>
+      <input type="text" id="to-user">
+    </div>
+    <ul id="messages"></ul>
+    <form id="input-form">
+      <input type="text" id="input-message" autocomplete="off">
+      <input type="submit" value="Send">
+    </form>
+    <script>
+      const socket = io();
+
+      const userInfo = {
+        name: prompt('Please enter your name'),
+        id: Date.now()
+      };
+
+      socket.emit('user-info', userInfo);
+
+      const messages = document.getElementById('messages');
+      const inputForm = document.getElementById('input-form');
+      const inputMessage = document.getElementById('input-message');
+      const toUserInput = document.getElementById('to-user');
+
+      inputForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const message = inputMessage.value.trim();
+        const toUser = toUserInput.value.trim();
+
+        if (message && toUser) {
+          socket.emit('private-message', {
+            to: toUser,
+            message: message
+          });
+
+          messages.innerHTML += `<li><span>You to ${toUser}: </span>${message}</li>`;
+          inputMessage.value = '';
+        }
+      });
+
+      socket.on('private-message', (data) => {
+        messages.innerHTML += `<li><span>${data.from} to You: </span>${data.message}</li>`;
+      });
+
+      socket.on('user-info', (data) => {
+        const userList = data.filter(user => user.id !== userInfo.id);
+        const userString = userList.map(user => user.name).join(', ');
+        document.getElementById('user-info').innerHTML = `Users online: ${userString}`;
+      });
+    </script>
+  </body>
+</html>
